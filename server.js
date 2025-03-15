@@ -13,7 +13,7 @@ app.use(express.static(path.join(__dirname, 'veiws'))); // Serve HTML, CSS, JS f
 app.use('/images', express.static(path.join(__dirname, 'images'))); // Serve images from "images" folder
 
 // Connect to MongoDB
-mongoose.connect('mongodb://127.0.0.1:27017/clouddd')
+mongoose.connect("mongodb+srv://reksitrajan01:8n4SHiaJfCZRrimg@cluster0.mperr.mongodb.net/test?retryWrites=true&w=majority")
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
