@@ -1,0 +1,102 @@
+/* Reset Styles */
+* {
+ margin: 0;
+ padding: 0;
+ box-sizing: border-box;
+ font-family: 'Arial', sans-serif;
+}
+
+/* Body - Add Background Image */
+body {
+ background: url("../images/login.png") no-repeat center center fixed;
+ background-size: cover; /* Ensures full-screen coverage */
+ background-position: center;
+ background-attachment: fixed;
+
+ /* Match colors to the image */
+ background-color: #0a1a2f; /* Dark blue fallback */
+ color: white; /* Keep text readable */
+}
+
+/* Header */
+header {
+ padding: 1rem;
+ background: rgba(10, 25, 50, 0.9); /* Dark blue similar to the image */
+ box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+/* Logo */
+.logo {
+ font-size: 2rem;
+ font-weight: bold;
+ color: #4ab0f3; /* Lighter blue to match the image */
+}
+
+/* Form Container */
+.form-container {
+ max-width: 400px;
+ margin: 5rem auto;
+ background: rgba(255, 255, 255, 0.1); /* Slight transparency */
+ padding: 2rem;
+ border-radius: 8px;
+ box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+ backdrop-filter: blur(10px); /* Adds a glass effect */
+}
+
+/* Form Elements */
+.form-group {
+ margin-bottom: 1.5rem;
+ text-align: left;
+}
+
+.form-group label {
+ display: block;
+ font-weight: bold;
+ margin-bottom: 0.5rem;
+}
+
+.form-group input {
+ width: 100%;
+ padding: 0.8rem;
+ border: 1px solid rgba(255, 255, 255, 0.2); /* Soft white border */
+ border-radius: 4px;
+ font-size: 1rem;
+ background: rgba(255, 255, 255, 0.1);
+ color: white;
+}
+
+/* Login Button */
+.btn {
+ display: block;
+ width: 100%;
+ padding: 0.8rem;
+ background-color: #3498db;
+ color: white;
+ font-size: 1rem;
+ font-weight: bold;
+ border: none;
+ border-radius: 4px;
+ cursor: pointer;
+ transition: background-color 0.3s;
+}
+
+.btn:hover {
+ background-color: #2980b9;
+}
+
+/* "Don't have an account? Sign up" */
+.signup-text {
+ margin-top: 1rem;
+ font-size: 1rem;
+}
+
+/* "Sign up" Link */
+.signup-link {
+ color: #4ab0f3;
+ font-weight: bold;
+ text-decoration: none;
+}
+
+.signup-link:hover {
+ text-decoration: underline;
+}

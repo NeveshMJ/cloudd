@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - CloudAI</title>
+    <link rel="stylesheet" href="signup.css">
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="logo">CodeZen</div>
+    </header>
+
+    <!-- Sign Up Form -->
+    <main>
+        <div class="form-container">
+            <h2>Sign Up</h2>
+            <form onsubmit="return registerUser(event)">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="fullName" placeholder="Enter your name" required>
+                </div>
+                <div class="form-group">
+                    <label>Gmail</label>
+                    <input type="email" id="email" placeholder="Enter your Gmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Gender</label>
+                    <div class="gender-options">
+                        <label><input type="radio" name="gender" value="male" required> Male</label>
+                        <label><input type="radio" name="gender" value="female"> Female</label>
+                        <label><input type="radio" name="gender" value="other"> Other</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" placeholder="Enter your password" required>
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="confirm-password" placeholder="Confirm your password" required>
+                    <p id="password-error" class="error-message"></p>
+                </div>
+                <button class="btn" type="submit">Sign Up</button>
+            </form>
+        </div>
+    </main>
+
+    <!-- JavaScript -->
+    <script>
+        async function registerUser(event) {
+            event.preventDefault(); // Prevent page reload
+
+            const fullName = document.getElementById("fullName").value;
+            const email = document.getElementById("email").value;
+            const gender = document.querySelector("input[name='gender']:checked").value;
+            const password = document.getElementById("password").value;
+            const confirmPassword = document.getElementById("confirm-password").value;
+            const errorText = document.getElementById("password-error");
+
+            if (password !== confirmPassword) {
+                errorText.textContent = "Passwords do not match!";
+                errorText.style.color = "red";
+                return false;
+            }
+
+            errorText.textContent = "";
+
+            try {
+                const response = await fetch("http://localhost:3000/signup", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ fullName, email, gender, password })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert("Sign Up Successful! Redirecting to Login Page...");
+                    window.location.href = "login.html";
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("An error occurred. Please try again later.");
+            }
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - CloudAI</title>
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="logo">CodeZen</div>
+    </header>
+
+    <!-- Login Form -->
+    <main>
+        <div class="form-container">
+            <h2>Login</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button class="btn" type="submit">Login</button>
+            </form>
+            
+            <!-- "Don't have an account? Sign up" on a single line below the button -->
+            <p class="signup-text">Don't have an account? <a href="signup.html" class="signup-link">Sign up</a></p>
+        </div>
+    </main>
+
+    <!-- JavaScript for Login -->
+    <script>
+        // Test server connection when page loads
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const statusElement = document.getElementById('serverStatus');
+                const response = await fetch('http://localhost:6000/api/test');
+                if (response.ok) {
+                    console.log('Server connection successful');
+                    statusElement.textContent = '';  // Clear any previous messages
+                } else {
+                    console.error('Server error');
+                    statusElement.textContent = 'Warning: Server connection issue. Login may not work.';
+                    statusElement.style.color = 'orange';
+                }
+            } catch (error) {
+                console.error('Cannot connect to server', error);
+                const statusElement = document.getElementById('serverStatus');
+                statusElement.textContent = 'Error: Cannot connect to server. Make sure server is running on port 6000.';
+                statusElement.style.color = 'red';
+            }
+        });
+
+        document.getElementById("loginForm").addEventListener("submit", async function(event) {
+            event.preventDefault(); // Prevent form from reloading the page
+            
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            try {
+                const response = await fetch("http://localhost:3000/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert("Login Successful! Redirecting to Dashboard...");
+                    window.location.href = "dashboard.html";
+                } else {
+                    alert(data.message); // Show error message from backend
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Server error! Please make sure the server is running on port 6000.");
+            }
+        });
+    </script>
+
+</body>
+</html>
