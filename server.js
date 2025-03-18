@@ -3,6 +3,12 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const path = require('path');
+const multer = require('multer');
+const AWS = require('aws-sdk');
+const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
+require('dotenv').config();
+
 const app = express();
 const PORT = 3000;
 
@@ -28,12 +34,39 @@ const userSchema = new mongoose.Schema({
 // User Model
 const User = mongoose.model('User', userSchema);
 
+// Configure AWS S3
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION
+});
+
+const s3 = new AWS.S3();
+const bucketName = 'nevv321'; // Your S3 bucket name
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './uploads/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
+
+// Create uploads directory if it doesn't exist
+if (!fs.existsSync('./uploads')) {
+  fs.mkdirSync('./uploads');
+}
+
+const upload = multer({ storage: storage });
+
 // Root route handler - redirect to login page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'veiws', 'login.html'));
 });
 
-// Routes
+// Authentication routes
 app.post('/signup', async (req, res) => {
   try {
     const { fullName, email, gender, password } = req.body;
@@ -85,6 +118,128 @@ app.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// S3 File Upload Routes
+app.post('/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const fileContent = fs.readFileSync(req.file.path);
+    const fileType = req.body.type || 'file';
+    
+    // Determine the prefix based on file type
+    let prefix = '';
+    if (fileType === 'image') {
+      prefix = 'images/';
+    } else {
+      prefix = 'files/';
+    }
+
+    // Upload to S3
+    const params = {
+      Bucket: bucketName,
+      Key: `${prefix}${req.file.originalname}`,
+      Body: fileContent,
+      ContentType: req.file.mimetype
+    };
+
+    const uploadResult = await s3.upload(params).promise();
+    
+    // Delete the temporary file
+    fs.unlinkSync(req.file.path);
+    
+    res.status(200).json({ 
+      message: 'File uploaded successfully', 
+      fileUrl: uploadResult.Location 
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ message: 'Server error during upload' });
+  }
+});
+
+// Folder upload route
+app.post('/upload-folder', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const fileContent = fs.readFileSync(req.file.path);
+    const filePath = req.body.path || req.file.originalname;
+    
+    // Upload to S3
+    const params = {
+      Bucket: bucketName,
+      Key: filePath,
+      Body: fileContent,
+      ContentType: req.file.mimetype
+    };
+
+    const uploadResult = await s3.upload(params).promise();
+    
+    // Delete the temporary file
+    fs.unlinkSync(req.file.path);
+    
+    res.status(200).json({ 
+      message: 'File uploaded successfully', 
+      fileUrl: uploadResult.Location 
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ message: 'Server error during upload' });
+  }
+});
+
+// List files route
+app.get('/list-files', async (req, res) => {
+  try {
+    const prefix = req.query.prefix || '';
+    
+    const params = {
+      Bucket: bucketName,
+      Prefix: prefix
+    };
+
+    const listResult = await s3.listObjectsV2(params).promise();
+    
+    // Filter out directory-like objects if needed
+    const files = listResult.Contents.filter(file => {
+      // Skip objects that end with '/' (directories)
+      return !file.Key.endsWith('/') && file.Key !== prefix;
+    });
+    
+    res.status(200).json({ files });
+  } catch (error) {
+    console.error('List files error:', error);
+    res.status(500).json({ message: 'Server error while listing files' });
+  }
+});
+
+// Delete file route
+app.delete('/delete-file', async (req, res) => {
+  try {
+    const key = req.query.key;
+    
+    if (!key) {
+      return res.status(400).json({ message: 'File key is required' });
+    }
+    
+    const params = {
+      Bucket: bucketName,
+      Key: key
+    };
+
+    await s3.deleteObject(params).promise();
+    
+    res.status(200).json({ message: 'File deleted successfully' });
+  } catch (error) {
+    console.error('Delete file error:', error);
+    res.status(500).json({ message: 'Server error while deleting file' });
   }
 });
 

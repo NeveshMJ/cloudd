@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - CodeZen</title>
-    <!-- AWS SDK for JavaScript -->
+    <!-- AWS SDK for JavaScript - Browser Version -->
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1048.0.min.js"></script>
     <style>
         /* Reset Styles */
@@ -428,7 +428,7 @@
             </div>
         </div>
 
-        <!-- File List Section - NEW SECTION -->
+        <!-- File List Section -->
         <div class="file-list-container">
             <div class="file-list-header">
                 <div class="file-list-tabs">
@@ -479,69 +479,42 @@
     </div>
 
     <script>
-     // For file upload
-     function resetFileUploadUI() {
-         const uploadStatus = document.getElementById('fileUploadStatus');
-         const progressContainer = document.getElementById('fileProgressContainer');
-         const progressBar = document.getElementById('fileProgressBar');
-         
-         uploadStatus.innerHTML = "";
-         progressBar.style.width = '0%';
-         progressContainer.style.display = 'none';
-         document.getElementById('fileInput').value = ""; // Reset the file input
-     }
+        // UI Reset Functions
+        function resetFileUploadUI() {
+            const uploadStatus = document.getElementById('fileUploadStatus');
+            const progressContainer = document.getElementById('fileProgressContainer');
+            const progressBar = document.getElementById('fileProgressBar');
+            
+            uploadStatus.innerHTML = "";
+            progressBar.style.width = '0%';
+            progressContainer.style.display = 'none';
+            document.getElementById('fileInput').value = ""; // Reset the file input
+        }
 
-     // For image upload
-     function resetImageUploadUI() {
-         const uploadStatus = document.getElementById('imageUploadStatus');
-         const progressContainer = document.getElementById('imageProgressContainer');
-         const progressBar = document.getElementById('imageProgressBar');
-         
-         uploadStatus.innerHTML = "";
-         progressBar.style.width = '0%';
-         progressContainer.style.display = 'none';
-         document.getElementById('imageInput').value = ""; // Reset the image input
-     }
+        function resetImageUploadUI() {
+            const uploadStatus = document.getElementById('imageUploadStatus');
+            const progressContainer = document.getElementById('imageProgressContainer');
+            const progressBar = document.getElementById('imageProgressBar');
+            
+            uploadStatus.innerHTML = "";
+            progressBar.style.width = '0%';
+            progressContainer.style.display = 'none';
+            document.getElementById('imageInput').value = ""; // Reset the image input
+        }
 
-     // For folder upload
-     function resetFolderUploadUI() {
-         const uploadStatus = document.getElementById('folderUploadStatus');
-         const progressContainer = document.getElementById('folderProgressContainer');
-         const progressBar = document.getElementById('folderProgressBar');
-         
-         uploadStatus.innerHTML = "";
-         progressBar.style.width = '0%';
-         progressContainer.style.display = 'none';
-         document.getElementById('folderInput').value = ""; // Reset the folder input
-     }
-        // Initialize AWS SDK
-        // WARNING: In production, NEVER include AWS credentials directly in your JavaScript code
-        // Use Amazon Cognito or similar services instead for secure authentication
+        function resetFolderUploadUI() {
+            const uploadStatus = document.getElementById('folderUploadStatus');
+            const progressContainer = document.getElementById('folderProgressContainer');
+            const progressBar = document.getElementById('folderProgressBar');
+            
+            uploadStatus.innerHTML = "";
+            progressBar.style.width = '0%';
+            progressContainer.style.display = 'none';
+            document.getElementById('folderInput').value = ""; // Reset the folder input
+        }
         
-        // Configure AWS
-        // Configure AWS
-    function configureAWS() {
-        // IMPORTANT: Replace these with your securely stored credentials
-        // DO NOT use these credentials in production - use AWS Cognito instead
-        require('dotenv').config();
-        AWS.config.update({
-            region: 'ap-south-1', // Change to your region if needed
-
-            credentials: new AWS.Credentials({
-                accessKeyId: process.env.access_key,
-                secretAccessKey: process.env.secret_key
-            })
-        });
-        
-        // Create S3 service object
-        return new AWS.S3({
-            apiVersion: '2006-03-01',
-            params: { Bucket: 'nevv321' }
-        });
-    }
-        
-        // Initialize S3 object
-        const s3 = configureAWS();
+        // API base URL - update this with your actual server URL
+        const API_URL = 'http://localhost:3000';
         let currentPrefix = ""; // Track the current folder/tab we're viewing
         
         // Folder Upload Functionality
@@ -563,36 +536,32 @@
             
             Array.from(files).forEach(file => {
                 const filePath = file.webkitRelativePath;
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('path', filePath);
                 
-                // Upload to S3
-                const params = {
-                    Bucket: 'nevv321',
-                    Key: filePath,
-                    Body: file,
-                    ContentType: file.type
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', `${API_URL}/upload-folder`, true);
+                
+                xhr.upload.onprogress = function(e) {
+                    if (e.lengthComputable) {
+                        // Individual file progress
+                        console.log(`File ${filePath} progress: ${Math.round((e.loaded / e.total) * 100)}%`);
+                    }
                 };
                 
-                const upload = s3.upload(params);
-                
-                // Track progress
-                upload.on('httpUploadProgress', function(progress) {
-                    const percent = Math.round((progress.loaded / progress.total) * 100);
-                    console.log(`File ${filePath} upload progress: ${percent}%`);
-                });
-                
-                // Handle completion
-                upload.send(function(err, data) {
+                xhr.onload = function() {
                     uploadedCount++;
                     
-                    if (err) {
-                        console.error('Error uploading file:', filePath, err);
-                        failCount++;
-                    } else {
+                    if (xhr.status === 200) {
                         console.log('Successfully uploaded file:', filePath);
                         successCount++;
+                    } else {
+                        console.error('Error uploading file:', filePath);
+                        failCount++;
                     }
                     
-                    // Update progress
+                    // Update overall progress
                     const progress = Math.round((uploadedCount / files.length) * 100);
                     progressBar.style.width = `${progress}%`;
                     
@@ -603,12 +572,12 @@
                                 Upload complete: ${successCount} successful, ${failCount} failed
                             </div>
                         `;
-                        // Refresh file list
                         loadFiles();
                         setTimeout(resetFolderUploadUI, 3000);
-
                     }
-                });
+                };
+                
+                xhr.send(formData);
             });
         });
 
@@ -625,45 +594,44 @@
             progressContainer.style.display = 'block';
             progressBar.style.width = '0%';
             
-            // Upload to S3
-            const params = {
-                Bucket: 'nevv321',
-                Key: `files/${file.name}`,
-                Body: file,
-                ContentType: file.type
-            };
+            // Create FormData object
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', 'file');
             
-            const upload = s3.upload(params);
+            // Send to server
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `${API_URL}/upload`, true);
             
             // Track progress
-            upload.on('httpUploadProgress', function(progress) {
-                const percent = Math.round((progress.loaded / progress.total) * 100);
-                progressBar.style.width = `${percent}%`;
-            });
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = `${percent}%`;
+                }
+            };
             
             // Handle completion
-            upload.send(function(err, data) {
-                if (err) {
-                    console.error('Error uploading file:', err);
-                    uploadStatus.innerHTML = `
-                        <div class="error-message">
-                            Error uploading: ${file.name}
-                        </div>
-                    `;
-                } else {
-                    console.log('Successfully uploaded file:', data.Location);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
                     uploadStatus.innerHTML = `
                         <div class="success-message">
                             Successfully uploaded: ${file.name}
                         </div>
                     `;
-                    // Refresh file list
-                    loadFiles();
+                    loadFiles(); // Refresh file list
+                } else {
+                    uploadStatus.innerHTML = `
+                        <div class="error-message">
+                            Error uploading: ${file.name}
+                        </div>
+                    `;
                 }
                 
-                // Reset UI after upload completes (whether success or error)
                 setTimeout(resetFileUploadUI, 3000);
-            });
+            };
+            
+            xhr.send(formData);
         });
 
         // Image Upload Functionality
@@ -679,138 +647,126 @@
             progressContainer.style.display = 'block';
             progressBar.style.width = '0%';
             
-            // Upload to S3
-            const params = {
-                Bucket: 'nevv321',
-                Key: `images/${file.name}`,
-                Body: file,
-                ContentType: file.type 
-            };
+            // Create FormData object
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', 'image');
             
-            const upload = s3.upload(params);
+            // Send to server
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `${API_URL}/upload`, true);
             
             // Track progress
-            upload.on('httpUploadProgress', function(progress) {
-                const percent = Math.round((progress.loaded / progress.total) * 100);
-                progressBar.style.width = `${percent}%`;
-            });
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = `${percent}%`;
+                }
+            };
             
             // Handle completion
-            upload.send(function(err, data) {
-                if (err) {
-                    console.error('Error uploading image:', err);
-                    uploadStatus.innerHTML = `
-                        <div class="error-message">
-                            Error uploading: ${file.name}
-                        </div>
-                    `;
-                } else {
-                    console.log('Successfully uploaded image:', data.Location);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
                     uploadStatus.innerHTML = `
                         <div class="success-message">
                             Successfully uploaded: ${file.name}
                         </div>
                     `;
-                    // Refresh file list
-                    loadFiles();
-                    setTimeout(resetImageUploadUI, 3000);
+                    loadFiles(); // Refresh file list
+                } else {
+                    uploadStatus.innerHTML = `
+                        <div class="error-message">
+                            Error uploading: ${file.name}
+                        </div>
+                    `;
                 }
-            });
+                
+                setTimeout(resetImageUploadUI, 3000);
+            };
+            
+            xhr.send(formData);
         });
         
-        // File Listing Functionality - NEW FEATURE
+        // File Listing Functionality
         function loadFiles() {
             // Show loading indicator
             document.getElementById('refresh-text').style.display = 'none';
             document.getElementById('refresh-spinner').style.display = 'inline-block';
             
-            const params = {
-                Bucket: 'nevv321',
-                Prefix: currentPrefix
-            };
+            // Create request to list files from server
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', `${API_URL}/list-files?prefix=${currentPrefix}`, true);
             
-            s3.listObjectsV2(params, function(err, data) {
+            xhr.onload = function() {
                 // Hide loading indicator
                 document.getElementById('refresh-text').style.display = 'inline-block';
                 document.getElementById('refresh-spinner').style.display = 'none';
                 
-                if (err) {
-                    console.error("Error listing files:", err);
-                    return;
-                }
-                
-                const tableBody = document.getElementById('fileTableBody');
-                const noFiles = document.getElementById('no-files');
-                const fileCount = document.getElementById('file-count');
-                
-                // Clear previous content
-                tableBody.innerHTML = '';
-                
-                // Process file list
-                const contents = data.Contents || [];
-                
-                // Filter out "folder" objects that end with / and have 0 size
-                const files = contents.filter(item => {
-                    // Skip the directory marker itself (empty files ending with /)
-                    return !(item.Key.endsWith('/') && item.Size === 0);
-                });
-                
-                if (files.length === 0) {
-                    tableBody.innerHTML = '';
-                    noFiles.style.display = 'block';
-                    fileCount.textContent = 'No files found';
-                } else {
-                    noFiles.style.display = 'none';
-                    fileCount.textContent = `${files.length} file${files.length !== 1 ? 's' : ''} found`;
+                if (xhr.status === 200) {
+                    const data = JSON.parse(xhr.responseText);
+                    const tableBody = document.getElementById('fileTableBody');
+                    const noFiles = document.getElementById('no-files');
+                    const fileCount = document.getElementById('file-count');
                     
-                    files.forEach(file => {
-                        const row = document.createElement('tr');
+                    // Clear previous content
+                    tableBody.innerHTML = '';
+                    
+                    // Process file list
+                    const files = data.files || [];
+                    
+                    if (files.length === 0) {
+                        tableBody.innerHTML = '';
+                        noFiles.style.display = 'block';
+                        fileCount.textContent = 'No files found';
+                    } else {
+                        noFiles.style.display = 'none';
+                        fileCount.textContent = `${files.length} file${files.length !== 1 ? 's' : ''} found`;
                         
-                        // Format the file name (remove prefix if needed)
-                        let displayName = file.Key;
-                        if (currentPrefix && displayName.startsWith(currentPrefix)) {
-                            displayName = displayName.substring(currentPrefix.length);
-                        }
-                        
-                        // Format the file size
-                        const size = formatFileSize(file.Size);
-                        
-                        // Format the last modified date
-                        const lastModified = new Date(file.LastModified).toLocaleString();
-                        
-                        row.innerHTML = `
-                            <td class="file-name" title="${displayName}">${displayName}</td>
-                            <td class="file-size">${size}</td>
-                            <td class="file-date">${lastModified}</td>
-                            <td class="file-actions">
-                                <button class="delete-btn" onclick="deleteFile('${file.Key}')">Delete</button>
-                            </td>
-                        `;
-                        
-                        tableBody.appendChild(row);
-                    });
+                        files.forEach(file => {
+                            const row = document.createElement('tr');
+                            
+                            // Format the file name (remove prefix if needed)
+                            let displayName = file.Key;
+                            if (currentPrefix && displayName.startsWith(currentPrefix)) {
+                                displayName = displayName.substring(currentPrefix.length);
+                            }
+                            
+                            row.innerHTML = `
+                                <td class="file-name" title="${displayName}">${displayName}</td>
+                                <td class="file-size">${formatFileSize(file.Size)}</td>
+                                <td class="file-date">${new Date(file.LastModified).toLocaleString()}</td>
+                                <td class="file-actions">
+                                    <button class="delete-btn" onclick="deleteFile('${file.Key}')">Delete</button>
+                                </td>
+                            `;
+                            
+                            tableBody.appendChild(row);
+                        });
+                    }
+                } else {
+                    console.error("Error listing files");
                 }
-            });
+            };
+            
+            xhr.send();
         }
         
-        // Delete File Functionality - NEW FEATURE
+        // Delete File Functionality
         function deleteFile(key) {
             if (confirm(`Are you sure you want to delete "${key}"?`)) {
-                const params = {
-                    Bucket: 'nevv321',
-                    Key: key
+                const xhr = new XMLHttpRequest();
+                xhr.open('DELETE', `${API_URL}/delete-file?key=${encodeURIComponent(key)}`, true);
+                
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        console.log("File deleted successfully:", key);
+                        loadFiles(); // Refresh the file list
+                    } else {
+                        alert(`Error deleting file: ${JSON.parse(xhr.responseText).message}`);
+                    }
                 };
                 
-                s3.deleteObject(params, function(err, data) {
-                    if (err) {
-                        console.error("Error deleting file:", err);
-                        alert(`Error deleting file: ${err.message}`);
-                    } else {
-                        console.log("File deleted successfully:", key);
-                        // Refresh the file list
-                        loadFiles();
-                    }
-                });
+                xhr.send();
             }
         }
         
@@ -845,7 +801,7 @@
             loadFiles();
         });
         
-        // Chatbot functionality - UPDATE RESPONSES 
+        // Chatbot functionality
         function getChatbotResponse(input) {
             let message = input.toLowerCase();
 
@@ -858,7 +814,7 @@
             } else if (message.includes("process")) {
                 return "Your file will be uploaded to Amazon S3, analyzed by Bedrock for code errors, and images will be processed using Textract.";
             } else if (message.includes("s3")) {
-                return "Amazon S3 is a cloud storage service where your files and images are securely stored in your 'nevnevne' bucket.";
+                return "Amazon S3 is a cloud storage service where your files and images are securely stored in your 'nevv321' bucket.";
             } else if (message.includes("lambda")) {
                 return "AWS Lambda is a serverless computing service that processes uploaded files automatically.";
             } else if (message.includes("bedrock")) {
@@ -874,7 +830,8 @@
             } else if (message.includes("refresh")) {
                 return "Click the Refresh button above the file list to update the files shown. This will show any newly uploaded files or remove deleted ones.";
             } else {
-                return "I don't understand that. Ask about uploads, deleting, viewing files, refreshing, S3, Lambda";}
+                return "I don't understand that. Ask about uploads, deleting, viewing files, refreshing, S3, Lambda";
+            }
         }
 
         function toggleChatbot() {
@@ -912,4 +869,4 @@
     </script>
 
 </body>
-</html> 
+</html>
