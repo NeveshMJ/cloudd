@@ -10,12 +10,14 @@ const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+
+// Use the PORT environment variable provided by Render, or fallback to 6000 for local development
+const PORT = process.env.PORT || 6000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'veiws'))); // Serve HTML, CSS, JS from "veiws" folder
+app.use(express.static(path.join(__dirname, 'veiws'))); // Serving from "veiws" folder as in your original code
 app.use('/images', express.static(path.join(__dirname, 'images'))); // Serve images from "images" folder
 
 // Connect to MongoDB
