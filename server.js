@@ -12,7 +12,7 @@ require('dotenv').config();
 const app = express();
 
 // Use the PORT environment variable provided by Render, or fallback to 6000 for local development
-const port = process.env.PORT || 10000;
+const port = process.env.PORT || 6000;
 
 
 // Middleware
