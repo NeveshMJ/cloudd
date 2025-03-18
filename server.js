@@ -251,4 +251,6 @@ app.get('/api/test', (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Current directory: ${__dirname}`);
 });
