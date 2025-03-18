@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - CodeZen</title>
+    <!-- AWS SDK for JavaScript -->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1048.0.min.js"></script>
+    <style>
+        /* Reset Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+        }
+
+        /* Body - Add Background Image */
+        body {
+            background: url("../images/dashbo.png") no-repeat center center fixed;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-color: #0a1a2f; /* Dark blue fallback */
+            color: white; /* Keep text readable */
+        }
+
+        /* Header - Fixed at the Top */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            padding: 1rem;
+            background: rgba(10, 25, 50, 0.9);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Logo */
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4ab0f3;
+        }
+
+        /* Upload Container */
+        .upload-container {
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+            max-width: 900px;
+            margin: 6rem auto 2rem auto;
+        }
+
+        /* Upload Boxes */
+        .upload-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            width: 30%;
+        }
+
+        /* Upload Icons */
+        .upload-image {
+            width: 100px;
+            height: 100px;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .upload-image:hover {
+            opacity: 0.8;
+        }
+
+        /* Upload Status */
+        #folderUploadStatus, #fileUploadStatus, #imageUploadStatus {
+        min-height: 40px; /* Adjust as needed */
+        margin-top: 1rem;
+        font-weight: bold;
+       }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 10px;
+            background-color: #3498db;
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+
+        /* Chatbot Button */
+        .chatbot-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease-in-out, box-shadow 0.3s;
+        }
+
+        .chatbot-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Chatbot Pop-up */
+        .chatbot-container {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 320px;
+            height: 450px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .chatbot-container.show {
+            display: flex;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Chatbot Header */
+        .chatbot-header {
+            background: #3498db;
+            color: white;
+            padding: 12px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            text-align: center;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+
+        /* Chatbot Messages */
+        .chatbot-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .chatbot-messages p {
+            padding: 8px 12px;
+            border-radius: 8px;
+            max-width: 85%;
+            word-wrap: break-word;
+            margin-bottom: 10px;
+            display: inline-block;
+            backdrop-filter: blur(10px);
+        }
+
+        .chatbot-messages .user-msg {
+            background: rgba(0, 119, 255, 0.2);
+            align-self: flex-end;
+            text-align: right;
+        }
+
+        .chatbot-messages .bot-msg {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Chatbot Input */
+        .chatbot-input {
+            display: flex;
+            padding: 12px;
+            border-top: 1px solid #ddd;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .chatbot-input input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            outline: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .chatbot-input button {
+            margin-left: 10px;
+            padding: 8px 14px;
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 20px;
+            transition: background 0.3s;
+        }
+
+        .chatbot-input button:hover {
+            background: #217dbb;
+        }
+
+        /* Upload Success Message */
+        .success-message {
+            color: #2ecc71;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        /* Upload Error Message */
+        .error-message {
+            color: #e74c3c;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        /* File List Container - NEW SECTION */
+        .file-list-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            overflow: auto;
+        }
+
+        .file-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 0.5rem;
+        }
+
+        .file-list-tabs {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .file-tab {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .file-tab.active {
+            background-color: #3498db;
+        }
+
+        .file-tab:hover:not(.active) {
+            background-color: rgba(52, 152, 219, 0.3);
+        }
+
+        .refresh-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background-color: #217dbb;
+        }
+
+        .file-list {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .file-list th {
+            text-align: left;
+            padding: 0.75rem;
+            background-color: rgba(52, 152, 219, 0.2);
+        }
+
+        .file-list tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background-color 0.3s;
+        }
+
+        .file-list tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .file-list td {
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .file-name {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-size {
+            width: 100px;
+        }
+
+        .file-date {
+            width: 200px;
+        }
+
+        .file-actions {
+            width: 100px;
+        }
+
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .no-files {
+            padding: 2rem;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .file-count {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: right;
+        }
+
+        /* Loading spinner */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="logo">CodeZen Dashboard</div>
+    </header>
+
+    <!-- Upload Section -->
+    <main>
+        <div class="upload-container">
+            <div class="upload-box">
+                <h2>Upload Folder</h2>
+                <form>
+                    <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
+                    <label for="folderInput">
+                        <img src="images/upload.png" class="upload-image">
+                    </label>
+                    <div id="folderUploadStatus"></div>
+                    <div class="progress-container" id="folderProgressContainer">
+                        <div class="progress-bar" id="folderProgressBar"></div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="upload-box">
+                <h2>Upload File</h2>
+                <form>
+                    <input type="file" id="fileInput" hidden>
+                    <label for="fileInput">
+                        <img src="images/file.png" class="upload-image">
+                    </label>
+                    <div id="fileUploadStatus"></div>
+                    <div class="progress-container" id="fileProgressContainer">
+                        <div class="progress-bar" id="fileProgressBar"></div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="upload-box">
+                <h2>Upload Image</h2>
+                <form>
+                    <input type="file" id="imageInput" accept="image/*" hidden>
+                    <label for="imageInput">
+                        <img src="images/image.png" class="upload-image">
+                    </label>
+                    <div id="imageUploadStatus"></div>
+                    <div class="progress-container" id="imageProgressContainer">
+                        <div class="progress-bar" id="imageProgressBar"></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- File List Section - NEW SECTION -->
+        <div class="file-list-container">
+            <div class="file-list-header">
+                <div class="file-list-tabs">
+                    <div class="file-tab active" data-prefix="">All Files</div>
+                    <div class="file-tab" data-prefix="files/">Files</div>
+                    <div class="file-tab" data-prefix="images/">Images</div>
+                </div>
+                <button class="refresh-btn" onclick="loadFiles()">
+                    <span id="refresh-text">Refresh</span>
+                    <span id="refresh-spinner" class="loading" style="display: none;"></span>
+                </button>
+            </div>
+            
+            <div id="file-list-content">
+                <table class="file-list">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Size</th>
+                            <th>Last Modified</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fileTableBody">
+                        <!-- Files will be listed here -->
+                    </tbody>
+                </table>
+                <div id="no-files" class="no-files" style="display: none;">
+                    No files found in this category.
+                </div>
+                <div class="file-count" id="file-count"></div>
+            </div>
+        </div>
+    </main>
+
+    
+    <!-- Chatbot -->
+    <button class="chatbot-btn" onclick="toggleChatbot()">💬</button>
+    <div class="chatbot-container" id="chatbot">
+        <div class="chatbot-header">CodeZen Bot</div>
+        <div class="chatbot-messages" id="chatbotMessages">
+            <p class="bot-msg"><b>Bot:</b> Hi! How can I help?</p>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="chatInput" placeholder="Ask me anything...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+     // For file upload
+     function resetFileUploadUI() {
+         const uploadStatus = document.getElementById('fileUploadStatus');
+         const progressContainer = document.getElementById('fileProgressContainer');
+         const progressBar = document.getElementById('fileProgressBar');
+         
+         uploadStatus.innerHTML = "";
+         progressBar.style.width = '0%';
+         progressContainer.style.display = 'none';
+         document.getElementById('fileInput').value = ""; // Reset the file input
+     }
+
+     // For image upload
+     function resetImageUploadUI() {
+         const uploadStatus = document.getElementById('imageUploadStatus');
+         const progressContainer = document.getElementById('imageProgressContainer');
+         const progressBar = document.getElementById('imageProgressBar');
+         
+         uploadStatus.innerHTML = "";
+         progressBar.style.width = '0%';
+         progressContainer.style.display = 'none';
+         document.getElementById('imageInput').value = ""; // Reset the image input
+     }
+
+     // For folder upload
+     function resetFolderUploadUI() {
+         const uploadStatus = document.getElementById('folderUploadStatus');
+         const progressContainer = document.getElementById('folderProgressContainer');
+         const progressBar = document.getElementById('folderProgressBar');
+         
+         uploadStatus.innerHTML = "";
+         progressBar.style.width = '0%';
+         progressContainer.style.display = 'none';
+         document.getElementById('folderInput').value = ""; // Reset the folder input
+     }
+        // Initialize AWS SDK
+        // WARNING: In production, NEVER include AWS credentials directly in your JavaScript code
+        // Use Amazon Cognito or similar services instead for secure authentication
+        
+        // Configure AWS
+        // Configure AWS
+    function configureAWS() {
+        // IMPORTANT: Replace these with your securely stored credentials
+        // DO NOT use these credentials in production - use AWS Cognito instead
+        require('dotenv').config();
+        AWS.config.update({
+            region: 'ap-south-1', // Change to your region if needed
+
+            credentials: new AWS.Credentials({
+                accessKeyId: process.env.access_key,
+                secretAccessKey: process.env.secret_key
+            })
+        });
+        
+        // Create S3 service object
+        return new AWS.S3({
+            apiVersion: '2006-03-01',
+            params: { Bucket: 'nevv321' }
+        });
+    }
+        
+        // Initialize S3 object
+        const s3 = configureAWS();
+        let currentPrefix = ""; // Track the current folder/tab we're viewing
+        
+        // Folder Upload Functionality
+        document.getElementById('folderInput').addEventListener('change', function(event) {
+            const files = event.target.files;
+            const uploadStatus = document.getElementById('folderUploadStatus');
+            const progressContainer = document.getElementById('folderProgressContainer');
+            const progressBar = document.getElementById('folderProgressBar');
+            
+            if (files.length === 0) return;
+            
+            uploadStatus.innerHTML = `Uploading ${files.length} files...`;
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            
+            let uploadedCount = 0;
+            let successCount = 0;
+            let failCount = 0;
+            
+            Array.from(files).forEach(file => {
+                const filePath = file.webkitRelativePath;
+                
+                // Upload to S3
+                const params = {
+                    Bucket: 'nevv321',
+                    Key: filePath,
+                    Body: file,
+                    ContentType: file.type
+                };
+                
+                const upload = s3.upload(params);
+                
+                // Track progress
+                upload.on('httpUploadProgress', function(progress) {
+                    const percent = Math.round((progress.loaded / progress.total) * 100);
+                    console.log(`File ${filePath} upload progress: ${percent}%`);
+                });
+                
+                // Handle completion
+                upload.send(function(err, data) {
+                    uploadedCount++;
+                    
+                    if (err) {
+                        console.error('Error uploading file:', filePath, err);
+                        failCount++;
+                    } else {
+                        console.log('Successfully uploaded file:', filePath);
+                        successCount++;
+                    }
+                    
+                    // Update progress
+                    const progress = Math.round((uploadedCount / files.length) * 100);
+                    progressBar.style.width = `${progress}%`;
+                    
+                    // Update status when all files are processed
+                    if (uploadedCount === files.length) {
+                        uploadStatus.innerHTML = `
+                            <div class="${failCount === 0 ? 'success-message' : 'error-message'}">
+                                Upload complete: ${successCount} successful, ${failCount} failed
+                            </div>
+                        `;
+                        // Refresh file list
+                        loadFiles();
+                        setTimeout(resetFolderUploadUI, 3000);
+
+                    }
+                });
+            });
+        });
+
+        // File Upload Functionality
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const uploadStatus = document.getElementById('fileUploadStatus');
+            const progressContainer = document.getElementById('fileProgressContainer');
+            const progressBar = document.getElementById('fileProgressBar');
+            
+            uploadStatus.innerHTML = `Uploading: ${file.name}`;
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            
+            // Upload to S3
+            const params = {
+                Bucket: 'nevv321',
+                Key: `files/${file.name}`,
+                Body: file,
+                ContentType: file.type
+            };
+            
+            const upload = s3.upload(params);
+            
+            // Track progress
+            upload.on('httpUploadProgress', function(progress) {
+                const percent = Math.round((progress.loaded / progress.total) * 100);
+                progressBar.style.width = `${percent}%`;
+            });
+            
+            // Handle completion
+            upload.send(function(err, data) {
+                if (err) {
+                    console.error('Error uploading file:', err);
+                    uploadStatus.innerHTML = `
+                        <div class="error-message">
+                            Error uploading: ${file.name}
+                        </div>
+                    `;
+                } else {
+                    console.log('Successfully uploaded file:', data.Location);
+                    uploadStatus.innerHTML = `
+                        <div class="success-message">
+                            Successfully uploaded: ${file.name}
+                        </div>
+                    `;
+                    // Refresh file list
+                    loadFiles();
+                }
+                
+                // Reset UI after upload completes (whether success or error)
+                setTimeout(resetFileUploadUI, 3000);
+            });
+        });
+
+        // Image Upload Functionality
+        document.getElementById('imageInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const uploadStatus = document.getElementById('imageUploadStatus');
+            const progressContainer = document.getElementById('imageProgressContainer');
+            const progressBar = document.getElementById('imageProgressBar');
+            
+            uploadStatus.innerHTML = `Uploading: ${file.name}`;
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            
+            // Upload to S3
+            const params = {
+                Bucket: 'nevv321',
+                Key: `images/${file.name}`,
+                Body: file,
+                ContentType: file.type 
+            };
+            
+            const upload = s3.upload(params);
+            
+            // Track progress
+            upload.on('httpUploadProgress', function(progress) {
+                const percent = Math.round((progress.loaded / progress.total) * 100);
+                progressBar.style.width = `${percent}%`;
+            });
+            
+            // Handle completion
+            upload.send(function(err, data) {
+                if (err) {
+                    console.error('Error uploading image:', err);
+                    uploadStatus.innerHTML = `
+                        <div class="error-message">
+                            Error uploading: ${file.name}
+                        </div>
+                    `;
+                } else {
+                    console.log('Successfully uploaded image:', data.Location);
+                    uploadStatus.innerHTML = `
+                        <div class="success-message">
+                            Successfully uploaded: ${file.name}
+                        </div>
+                    `;
+                    // Refresh file list
+                    loadFiles();
+                    setTimeout(resetImageUploadUI, 3000);
+                }
+            });
+        });
+        
+        // File Listing Functionality - NEW FEATURE
+        function loadFiles() {
+            // Show loading indicator
+            document.getElementById('refresh-text').style.display = 'none';
+            document.getElementById('refresh-spinner').style.display = 'inline-block';
+            
+            const params = {
+                Bucket: 'nevv321',
+                Prefix: currentPrefix
+            };
+            
+            s3.listObjectsV2(params, function(err, data) {
+                // Hide loading indicator
+                document.getElementById('refresh-text').style.display = 'inline-block';
+                document.getElementById('refresh-spinner').style.display = 'none';
+                
+                if (err) {
+                    console.error("Error listing files:", err);
+                    return;
+                }
+                
+                const tableBody = document.getElementById('fileTableBody');
+                const noFiles = document.getElementById('no-files');
+                const fileCount = document.getElementById('file-count');
+                
+                // Clear previous content
+                tableBody.innerHTML = '';
+                
+                // Process file list
+                const contents = data.Contents || [];
+                
+                // Filter out "folder" objects that end with / and have 0 size
+                const files = contents.filter(item => {
+                    // Skip the directory marker itself (empty files ending with /)
+                    return !(item.Key.endsWith('/') && item.Size === 0);
+                });
+                
+                if (files.length === 0) {
+                    tableBody.innerHTML = '';
+                    noFiles.style.display = 'block';
+                    fileCount.textContent = 'No files found';
+                } else {
+                    noFiles.style.display = 'none';
+                    fileCount.textContent = `${files.length} file${files.length !== 1 ? 's' : ''} found`;
+                    
+                    files.forEach(file => {
+                        const row = document.createElement('tr');
+                        
+                        // Format the file name (remove prefix if needed)
+                        let displayName = file.Key;
+                        if (currentPrefix && displayName.startsWith(currentPrefix)) {
+                            displayName = displayName.substring(currentPrefix.length);
+                        }
+                        
+                        // Format the file size
+                        const size = formatFileSize(file.Size);
+                        
+                        // Format the last modified date
+                        const lastModified = new Date(file.LastModified).toLocaleString();
+                        
+                        row.innerHTML = `
+                            <td class="file-name" title="${displayName}">${displayName}</td>
+                            <td class="file-size">${size}</td>
+                            <td class="file-date">${lastModified}</td>
+                            <td class="file-actions">
+                                <button class="delete-btn" onclick="deleteFile('${file.Key}')">Delete</button>
+                            </td>
+                        `;
+                        
+                        tableBody.appendChild(row);
+                    });
+                }
+            });
+        }
+        
+        // Delete File Functionality - NEW FEATURE
+        function deleteFile(key) {
+            if (confirm(`Are you sure you want to delete "${key}"?`)) {
+                const params = {
+                    Bucket: 'nevv321',
+                    Key: key
+                };
+                
+                s3.deleteObject(params, function(err, data) {
+                    if (err) {
+                        console.error("Error deleting file:", err);
+                        alert(`Error deleting file: ${err.message}`);
+                    } else {
+                        console.log("File deleted successfully:", key);
+                        // Refresh the file list
+                        loadFiles();
+                    }
+                });
+            }
+        }
+        
+        // Helper function to format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Tab switching functionality
+        document.querySelectorAll('.file-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Update active tab
+                document.querySelectorAll('.file-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Update current prefix
+                currentPrefix = this.getAttribute('data-prefix');
+                
+                // Load files for this prefix
+                loadFiles();
+            });
+        });
+        
+        // Initial file load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFiles();
+        });
+        
+        // Chatbot functionality - UPDATE RESPONSES 
+        function getChatbotResponse(input) {
+            let message = input.toLowerCase();
+
+            if (message.includes("upload") || message.includes("store") || message.includes("file")) {
+                return "Files are uploaded directly to your S3 bucket 'nevv321'. You can upload folders, individual files, or images using the upload boxes. The uploaded files will appear in the file list below.";
+            } else if (message.includes("delete") || message.includes("remove")) {
+                return "You can delete any file by clicking the Delete button next to the file in the file list. Deleted files are permanently removed from your S3 bucket.";
+            } else if (message.includes("list") || message.includes("view") || message.includes("see files")) {
+                return "All your uploaded files are listed in the file list section. You can filter by type using the tabs at the top, and refresh the list using the Refresh button.";
+            } else if (message.includes("process")) {
+                return "Your file will be uploaded to Amazon S3, analyzed by Bedrock for code errors, and images will be processed using Textract.";
+            } else if (message.includes("s3")) {
+                return "Amazon S3 is a cloud storage service where your files and images are securely stored in your 'nevnevne' bucket.";
+            } else if (message.includes("lambda")) {
+                return "AWS Lambda is a serverless computing service that processes uploaded files automatically.";
+            } else if (message.includes("bedrock")) {
+                return "Amazon Bedrock is used to analyze code files for faults and suggest improvements.";
+            } else if (message.includes("textract")) {
+                return "Amazon Textract extracts text from images, making it useful for scanned documents.";
+            } else if (message.includes("progress")) {
+                return "You can see the upload progress with the blue progress bar that appears when uploading files.";
+            } else if (message.includes("hi") || message.includes("hello")) {
+                return "Hello! How can I assist you with your file uploads or management today?";
+            } else if (message.includes("bye")) {
+                return "Goodbye! Have a great day!";
+            } else if (message.includes("refresh")) {
+                return "Click the Refresh button above the file list to update the files shown. This will show any newly uploaded files or remove deleted ones.";
+            } else {
+                return "I don't understand that. Ask about uploads, deleting, viewing files, refreshing, S3, Lambda";}
+        }
+
+        function toggleChatbot() {
+            let chatbot = document.getElementById("chatbot");
+            chatbot.classList.toggle("show");
+        }
+
+        function sendMessage() {
+            let input = document.getElementById("chatInput").value.trim();
+            let chatbox = document.getElementById("chatbotMessages");
+
+            if (input === "") return;
+
+            // User message
+            chatbox.innerHTML += `<p class="user-msg"><b>You:</b> ${input}</p>`;
+
+            document.getElementById("chatInput").value = "";
+            chatbox.scrollTop = chatbox.scrollHeight;
+
+            setTimeout(() => {
+                let response = getChatbotResponse(input);
+                chatbox.innerHTML += `<p class="bot-msg"><b>Bot:</b> ${response}</p>`;
+
+                chatbox.scrollTop = chatbox.scrollHeight;
+            }, 500);
+        }
+        
+        // Allow Enter key to send message
+        document.getElementById("chatInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+    </script>
+
+</body>
+</html> 
