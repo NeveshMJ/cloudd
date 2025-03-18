@@ -10,7 +10,7 @@ const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 6000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
