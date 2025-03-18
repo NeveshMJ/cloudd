@@ -40,7 +40,8 @@
         window.addEventListener('DOMContentLoaded', async () => {
             try {
                 const statusElement = document.getElementById('serverStatus');
-                const response = await fetch('http://localhost:6000/api/test');
+                const response = await fetch('/api/test');
+
                 if (response.ok) {
                     console.log('Server connection successful');
                     statusElement.textContent = '';  // Clear any previous messages

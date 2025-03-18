@@ -12,7 +12,8 @@ require('dotenv').config();
 const app = express();
 
 // Use the PORT environment variable provided by Render, or fallback to 6000 for local development
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 6000;
+
 
 // Middleware
 app.use(cors());
