@@ -22,7 +22,7 @@ app.use(express.static(path.join(__dirname, 'veiws'))); // Serving from "veiws" 
 app.use('/images', express.static(path.join(__dirname, 'images'))); // Serve images from "images" folder
 
 // Connect to MongoDB
-mongoose.connect("mongodb+srv://reksitrajan01:8n4SHiaJfCZRrimg@cluster0.mperr.mongodb.net/test?retryWrites=true&w=majority")
+mongoose.connect("mongodb://127.0.0.1:27017/nevvvv")
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
@@ -47,6 +47,13 @@ AWS.config.update({
 const s3 = new AWS.S3();
 const bucketName = 'nevv321'; // Your S3 bucket name
 
+const reportsS3 = new AWS.S3({
+  accessKeyId: process.env.REPORTS_AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.REPORTS_AWS_SECRET_ACCESS_KEY,
+  region: process.env.REPORTS_AWS_REGION  // Use reports region or fall back to main region
+});
+const reportsBucketName = 'nevv321-reports';
+const reportPrefix = 'human-reports/';
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -254,4 +261,52 @@ app.get('/api/test', (req, res) => {
 // Start server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
+});
+// Add this route to your Express server code
+app.get('/get-s3-report', async (req, res) => {
+  try {
+    // Use the reports-specific S3 client and bucket name
+    const reportPrefix = 'human-reports/';
+    
+    const params = {
+      Bucket: reportsBucketName,
+      Prefix: reportPrefix
+    };
+
+    // Get list of objects using the reports S3 client
+    const listResult = await reportsS3.listObjectsV2(params).promise();
+    
+    if (!listResult.Contents || listResult.Contents.length === 0) {
+      return res.status(404).json({ message: 'No reports found in human-reports folder' });
+    }
+    
+    // Sort to get the most recent report
+    const sortedReports = listResult.Contents.sort((a, b) => {
+      return new Date(b.LastModified) - new Date(a.LastModified);
+    });
+    
+    // Get the most recent report
+    const latestReport = sortedReports[0];
+    
+    // Get the report content using the reports S3 client
+    const reportParams = {
+      Bucket: reportsBucketName,
+      Key: latestReport.Key
+    };
+    
+    const reportObject = await reportsS3.getObject(reportParams).promise();
+    
+    // Convert report content to string
+    const reportContent = reportObject.Body.toString('utf-8');
+    
+    // Return the content
+    res.status(200).json({ 
+      content: reportContent,
+      fileName: latestReport.Key.split('/').pop(),
+      lastModified: latestReport.LastModified
+    });
+  } catch (error) {
+    console.error('Error fetching report from S3:', error);
+    res.status(500).json({ message: 'Server error while fetching report' });
+  }
 });

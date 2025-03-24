@@ -771,6 +771,42 @@
             }
         }
         
+        // Add this function to your JavaScript code
+async function fetchReportFromS3() {
+  try {
+    // Get the chat messages container
+    const chatbox = document.getElementById("chatbotMessages");
+    
+    // Show loading message
+    chatbox.innerHTML += `<p class="bot-msg"><b>Bot:</b> Fetching your report from human-reports...</p>`;
+    chatbox.scrollTop = chatbox.scrollHeight;
+    
+    // Make a request to your backend endpoint that will get the report
+    const response = await fetch('/get-s3-report', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch report');
+    }
+    
+    const data = await response.json();
+    
+    // Display the report in the chatbot
+    chatbox.innerHTML += `<p class="bot-msg"><b>Bot:</b> Here's your latest report:<br>
+      <div class="report-content">${data.content}</div></p>`;
+    
+    chatbox.scrollTop = chatbox.scrollHeight;
+  } catch (error) {
+    console.error('Error fetching report:', error);
+    const chatbox = document.getElementById("chatbotMessages");
+    chatbox.innerHTML += `<p class="bot-msg"><b>Bot:</b> Sorry, I couldn't retrieve your report. Please try again later.</p>`;
+    chatbox.scrollTop = chatbox.scrollHeight;
+  }
+}
         // Helper function to format file size
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
@@ -804,36 +840,40 @@
         
         // Chatbot functionality
         function getChatbotResponse(input) {
-            let message = input.toLowerCase();
+        let message = input.toLowerCase();
 
-            if (message.includes("upload") || message.includes("store") || message.includes("file")) {
-                return "Files are uploaded directly to your S3 bucket 'nevv321'. You can upload folders, individual files, or images using the upload boxes. The uploaded files will appear in the file list below.";
-            } else if (message.includes("delete") || message.includes("remove")) {
-                return "You can delete any file by clicking the Delete button next to the file in the file list. Deleted files are permanently removed from your S3 bucket.";
-            } else if (message.includes("list") || message.includes("view") || message.includes("see files")) {
-                return "All your uploaded files are listed in the file list section. You can filter by type using the tabs at the top, and refresh the list using the Refresh button.";
-            } else if (message.includes("process")) {
-                return "Your file will be uploaded to Amazon S3, analyzed by Bedrock for code errors, and images will be processed using Textract.";
-            } else if (message.includes("s3")) {
-                return "Amazon S3 is a cloud storage service where your files and images are securely stored in your 'nevv321' bucket.";
-            } else if (message.includes("lambda")) {
-                return "AWS Lambda is a serverless computing service that processes uploaded files automatically.";
-            } else if (message.includes("bedrock")) {
-                return "Amazon Bedrock is used to analyze code files for faults and suggest improvements.";
-            } else if (message.includes("textract")) {
-                return "Amazon Textract extracts text from images, making it useful for scanned documents.";
-            } else if (message.includes("progress")) {
-                return "You can see the upload progress with the blue progress bar that appears when uploading files.";
-            } else if (message.includes("hi") || message.includes("hello")) {
-                return "Hello! How can I assist you with your file uploads or management today?";
-            } else if (message.includes("bye")) {
-                return "Goodbye! Have a great day!";
-            } else if (message.includes("refresh")) {
-                return "Click the Refresh button above the file list to update the files shown. This will show any newly uploaded files or remove deleted ones.";
-            } else {
-                return "I don't understand that. Ask about uploads, deleting, viewing files, refreshing, S3, Lambda";
-            }
-        }
+    if (message.includes("upload") || message.includes("store") || message.includes("file")) {
+        return "Files are uploaded directly to your S3 bucket 'nevv321'. You can upload folders, individual files, or images using the upload boxes. The uploaded files will appear in the file list below.";
+    } else if (message.includes("delete") || message.includes("remove")) {
+        return "You can delete any file by clicking the Delete button next to the file in the file list. Deleted files are permanently removed from your S3 bucket.";
+    } else if (message.includes("list") || message.includes("view") || message.includes("see files")) {
+        return "All your uploaded files are listed in the file list section. You can filter by type using the tabs at the top, and refresh the list using the Refresh button.";
+    } else if (message.includes("process")) {
+        return "Your file will be uploaded to Amazon S3, analyzed by Bedrock for code errors, and images will be processed using Textract.";
+    } else if (message.includes("s3")) {
+        return "Amazon S3 is a cloud storage service where your files and images are securely stored in your 'nevv321' bucket.";
+    } else if (message.includes("lambda")) {
+        return "AWS Lambda is a serverless computing service that processes uploaded files automatically.";
+    } else if (message.includes("bedrock")) {
+        return "Amazon Bedrock is used to analyze code files for faults and suggest improvements.";
+    } else if (message.includes("textract")) {
+        return "Amazon Textract extracts text from images, making it useful for scanned documents.";
+    } else if (message.includes("progress")) {
+        return "You can see the upload progress with the blue progress bar that appears when uploading files.";
+    } else if (message.includes("hi") || message.includes("hello")) {
+        return "Hello! How can I assist you with your file uploads or management today?";
+    } else if (message.includes("bye")) {
+        return "Goodbye! Have a great day!";
+    } else if (message.includes("refresh")) {
+        return "Click the Refresh button above the file list to update the files shown. This will show any newly uploaded files or remove deleted ones.";
+    } else if (message.includes("report")) {
+        fetchReportFromS3();  // Call function to get the report
+        return "Fetching your latest code review report..."; 
+    } else {
+        return "I don't understand that. Ask about uploads, deleting, viewing files, refreshing, S3, Lambda.";
+    }
+}
+
 
         function toggleChatbot() {
             let chatbot = document.getElementById("chatbot");
