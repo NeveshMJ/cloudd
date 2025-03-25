@@ -39,21 +39,21 @@ const User = mongoose.model('User', userSchema);
 
 // Configure AWS S3
 AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION
+  accessKeyId: YOUR_AWS_ACCESS_KEY_ID,
+  secretAccessKey: YOUR_AWS_SECRET_ACCESS_KEY,
+  region: YOUR_AWS_REGION
 });
 
 const s3 = new AWS.S3();
-const bucketName = 'nevv321'; // Your S3 bucket name
+const bucketName = 'YOUR_BUCKET_NAME';// Your S3 bucket name
 
 const reportsS3 = new AWS.S3({
-  accessKeyId: process.env.REPORTS_AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.REPORTS_AWS_SECRET_ACCESS_KEY,
-  region: process.env.REPORTS_AWS_REGION  // Use reports region or fall back to main region
+  accessKeyId: YOUR_REPORTS_AWS_ACCESS_KEY_ID,
+  secretAccessKey: YOUR_REPORTS_AWS_SECRET_ACCESS_KEY,
+  region: YOUR_REPORTS_AWS_REGION  // Use reports region or fall back to main region
 });
-const reportsBucketName = 'nevv321-reports';
-const reportPrefix = 'human-reports/';
+const reportsBucketName = 'YOUR_BUCKET_NAME';
+const reportPrefix = 'YOUR_BUCKET_NAME/FOLDER_NAME/';
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
